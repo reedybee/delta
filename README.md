@@ -6,6 +6,6 @@ Delta's header file can be found at `delta/delta.h`.
 
 Including `delta.h` in your project, delta can be used by 
 ```c
-#include <delta.h>
 #define DELTA_IMPLEMENTATION
+#include <delta.h>
 ```
