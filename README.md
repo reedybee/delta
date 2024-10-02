@@ -9,4 +9,3 @@ Including `delta.h` in your project, delta can be used by
 #include <delta.h>
 #define DELTA_IMPLEMENTATION
 ```
-After which delta can be used.
