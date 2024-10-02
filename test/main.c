@@ -7,8 +7,11 @@
 int main(void) {
     printf("Hello World\n");
 
-    if (!InitDelta())
-        return 1;
-    
+    deltaWindow* window = deltaCreateWindow("Delta Test Window", 100, 100, DELTA_WINDOW_SHOWN);
+
+    while (1) {
+        deltaUpdateWindow(window);
+    }
+
     return 0;
 }
