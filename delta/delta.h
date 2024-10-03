@@ -97,11 +97,23 @@ returns a pointer to the newly created window, or,
 nullptr on failure
 */
 DELAPI deltaWindow* deltaCreateWindow(const char* title, uint32_d w, uint32_d h, uint32_d flags);
-
+/*
+updates the delta window,
+retrieves any updates sent to delta
+from the operating system
+returns nothing.
+*/
 DELAPI void deltaUpdateWindow(deltaWindow* window);
-
+/*
+retrieves the close flag from
+the delta window given
+returns the close flag
+*/
 DELAPI uint32_d deltaWindowShouldClose(deltaWindow* window);
-
+/*
+free the given delta window,
+releasing the memory used
+*/
 DELAPI void deltaDestroyWindow(deltaWindow* window);
 
 // win32 api
