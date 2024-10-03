@@ -1,5 +1,5 @@
 # Delta - **D**ynamic **E**ngine for **L**ow-Level **T**asks and **A**PI's
-Delta is a single c-header file for (eventually) creating and managing windows across various
+Delta (**D**ynamic **E**ngine for **L**ow-Level **T**asks and **A**PI's) is a single c-header file for (eventually) creating and managing windows across various
 operating systems and hardware using a single API.
 
 ## Features:
