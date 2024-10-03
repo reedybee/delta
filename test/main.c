@@ -7,11 +7,11 @@
 int main(void) {
     printf("Hello World\n");
 
-    deltaWindow* window = deltaCreateWindow("Delta Test Window", 100, 100, DELTA_WINDOW_SHOWN);
+    deltaWindow* window = deltaCreateWindow("Delta Test Window", 1000, 700, DELTA_WINDOW_SHOWN);
 
-    while (1) {
+    while (deltaWindowShouldClose(window) == 0) {
         deltaUpdateWindow(window);
     }
-
+    deltaDestroyWindow(window);
     return 0;
 }

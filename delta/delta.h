@@ -49,7 +49,8 @@ no warranty implied; use at your own risk
 #define DELTA_VERSION_MINOR 1
 
 typedef struct DELTA_WINDOW {
-    int created;
+    uint32_d created;
+    uint32_d destroyed;
     HWND hwnd;
 } deltaWindow;
 
@@ -99,6 +100,11 @@ DELAPI deltaWindow* deltaCreateWindow(const char* title, uint32_d w, uint32_d h,
 
 DELAPI void deltaUpdateWindow(deltaWindow* window);
 
+DELAPI uint32_d deltaWindowShouldClose(deltaWindow* window);
+
+DELAPI void deltaDestroyWindow(deltaWindow* window);
+
+// win32 api
 
 DELAPI_WIN32 LRESULT CALLBACK GetWindowProcWin32(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
@@ -143,6 +149,9 @@ DELAPI deltaWindow* deltaCreateWindow(const char* title, uint32_d w, uint32_d h,
     deltaWindow* window = (deltaWindow*)malloc_d(sizeof(deltaWindow));
     memset(window, 0, sizeof(deltaWindow));
 
+    window->created = 1;
+    window->destroyed = 0;
+
     window->hwnd = CreateWindowWin32(title, w, h);
 
     ShowWindow(window->hwnd, flags);
@@ -157,13 +166,23 @@ DELAPI void deltaUpdateWindow(deltaWindow* window) {
     }
 
     MSG msg = { 0 };
-    while (GetMessage(&msg, NULL, 0, 0) > 0) {
+    while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
-    }
 
-    GetWindowProcWin32;
+        if (msg.message == WM_QUIT)
+            window->destroyed = 1;
+    }
     return;
+}
+
+DELAPI uint32_d deltaWindowShouldClose(deltaWindow* window) {
+    return window->destroyed;
+}
+
+DELAPI void deltaDestroyWindow(deltaWindow* window) {
+    DestroyWindow(window->hwnd);
+    free(window);
 }
 
 // win32 implementations
@@ -172,7 +191,7 @@ DELAPI_WIN32 LRESULT CALLBACK GetWindowProcWin32(HWND hwnd, UINT msg, WPARAM wpa
     switch (msg) {
         case WM_DESTROY:
             PostQuitMessage(0);
-            return 0;
+            return 1;
         case WM_PAINT: {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
