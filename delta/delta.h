@@ -11,6 +11,7 @@ no warranty implied; use at your own risk
 #include <stdio.h>
 #include <string.h>
 #include <windows.h>
+#include <glad/glad.h>
 
 // used to distinquish what is apart of the Delta api
 #define DELAPI 
@@ -39,11 +40,14 @@ no warranty implied; use at your own risk
 // signed long long int
 #define int64_d  int64_t
 
+typedef void* (*deltaProcAddress)(const char*); 
+
 #define DELTA_FAIL 0
 #define DELTA_SUCCESS 1
 
-#define DELTA_WINDOW_SHOWN  1
-#define DELTA_WINDOW_HIDDEN 0
+#define DELTA_WINDOW_HIDDEN 0b00000000
+#define DELTA_WINDOW_SHOWN  0b00000001
+#define DELTA_WINDOW_OPENGL 0b00000010
 
 #define DELTA_VERSION_MAJOR 0
 #define DELTA_VERSION_MINOR 1
@@ -55,8 +59,8 @@ typedef struct DELTA_WINDOW {
 } deltaWindow;
 
 typedef struct DELTA_DATA {
-    // will be changing
-    deltaWindow* deltaWindows;
+    deltaWindow* deltaWindow;
+    HGLRC context;
 } DeltaData;
 
 extern DeltaData deltaData;
@@ -91,6 +95,10 @@ returns the new block, or
 nullptr if block is a nullptr
 */
 void* override memset_d(void* block, int value, size_d num);
+
+
+DELAPI uint32_d deltaSetOpenGLContext(uint32_d versionMajor, uint32_d versionMinor);
+
 /*
 creates a delta window
 returns a pointer to the newly created window, or,
@@ -115,8 +123,23 @@ free the given delta window,
 releasing the memory used
 */
 DELAPI void deltaDestroyWindow(deltaWindow* window);
+/*
+returns the address to the current openGL context
+*/
+DELAPI deltaProcAddress deltaGetProcAddress(const char* name);
 
 // win32 api
+
+// Define necessary WGL_ARB constants manually
+#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
+#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
+#define WGL_CONTEXT_PROFILE_MASK_ARB  0x9126
+
+// Profile bits
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB  0x00000001
+#define WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB 0x00000002
+
+typedef HGLRC(WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC hDC, HGLRC hShareContext, const int* attribList);
 
 DELAPI_WIN32 LRESULT CALLBACK GetWindowProcWin32(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
@@ -157,6 +180,49 @@ void* override memset_d(void* block, int value, size_d num) {
 
 // delta implementations
 
+DELAPI uint32_d deltaSetOpenGLContext(uint32_d versionMajor, uint32_d versionMinor) {
+    PIXELFORMATDESCRIPTOR pfd = { 0 };
+    pfd.nSize = sizeof(pfd);
+    pfd.nVersion = 1;
+    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pfd.iPixelType = PFD_TYPE_RGBA;
+    pfd.cColorBits = 32;
+    pfd.cDepthBits = 24;
+    pfd.cStencilBits = 8;
+    pfd.iLayerType = PFD_MAIN_PLANE;
+
+    HDC hdc = GetDC(deltaData.deltaWindow->hwnd);
+    if (hdc == NULL) {
+        printf("Failed to retrieve HDC\n");
+    }
+
+    uint32_d pixelFormatNumber = ChoosePixelFormat(hdc, &pfd);
+    SetPixelFormat(hdc, pixelFormatNumber, &pfd);
+
+    HGLRC temp = wglCreateContext(hdc);
+    wglMakeCurrent(hdc, temp);
+
+    PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB = 
+        (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
+
+    if (!wglCreateContextAttribsARB) {
+        printf("Failed to create context attribs arb\n");
+    }
+
+    uint32_d attribs[] = {
+        WGL_CONTEXT_MAJOR_VERSION_ARB, versionMajor,
+        WGL_CONTEXT_MINOR_VERSION_ARB, versionMinor,
+        WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB, 
+        0
+    };
+
+    HGLRC hrc = wglCreateContextAttribsARB(hdc, 0, attribs);
+    wglMakeCurrent(NULL, NULL);
+    wglDeleteContext(temp);
+    wglMakeCurrent(hdc, hrc);
+    deltaData.context = hrc;
+}
+
 DELAPI deltaWindow* deltaCreateWindow(const char* title, uint32_d w, uint32_d h, uint32_d flags) {
     deltaWindow* window = (deltaWindow*)malloc_d(sizeof(deltaWindow));
     memset(window, 0, sizeof(deltaWindow));
@@ -166,8 +232,13 @@ DELAPI deltaWindow* deltaCreateWindow(const char* title, uint32_d w, uint32_d h,
 
     window->hwnd = CreateWindowWin32(title, w, h);
 
-    ShowWindow(window->hwnd, flags);
+    uint8_d shown = flags & DELTA_WINDOW_SHOWN;
+    if (shown)
+        ShowWindow(window->hwnd, 1);
+    else 
+        ShowWindow(window->hwnd, SW_MINIMIZE);
 
+    deltaData.deltaWindow = window;
     return (deltaWindow*)window;
 }
 
@@ -185,6 +256,9 @@ DELAPI void deltaUpdateWindow(deltaWindow* window) {
         if (msg.message == WM_QUIT)
             window->destroyed = 1;
     }
+
+    SwapBuffers(GetDC(window->hwnd));
+
     return;
 }
 
@@ -195,6 +269,15 @@ DELAPI uint32_d deltaWindowShouldClose(deltaWindow* window) {
 DELAPI void deltaDestroyWindow(deltaWindow* window) {
     DestroyWindow(window->hwnd);
     free(window);
+}
+
+DELAPI deltaProcAddress deltaGetProcAddress(const char* name) {
+    deltaProcAddress addr = (deltaProcAddress)wglGetProcAddress(name);
+
+    if (!addr) {
+        HMODULE module = GetModuleHandleA("opengl32.dll");
+        addr = (deltaProcAddress)GetProcAddress(module, name);
+    }
 }
 
 // win32 implementations
@@ -214,6 +297,7 @@ DELAPI_WIN32 LRESULT CALLBACK GetWindowProcWin32(HWND hwnd, UINT msg, WPARAM wpa
         }
         return 0;
     }
+
     return DefWindowProc(hwnd, msg, wparam, lparam);
 }
 

@@ -1,3 +1,5 @@
+#include <glad/glad.h>
+
 #define DELTA_IMPLEMENTATION
 #include <delta.h>
 
@@ -7,9 +9,15 @@
 int main(void) {
     printf("Hello World\n");
 
-    deltaWindow* window = deltaCreateWindow("Delta Test Window", 1000, 700, DELTA_WINDOW_SHOWN);
+    deltaWindow* window = deltaCreateWindow("Delta Test Window", 1000, 700, DELTA_WINDOW_SHOWN | DELTA_WINDOW_OPENGL);
 
-    while (deltaWindowShouldClose(window) == 0) {
+    deltaSetOpenGLContext(4, 6);
+
+    if (!gladLoadGLLoader((GLADloadproc)deltaGetProcAddress)) {
+        printf("Failed to initialize glad\n");
+    }
+
+    while (!deltaWindowShouldClose(window)) {
         deltaUpdateWindow(window);
     }
     deltaDestroyWindow(window);
