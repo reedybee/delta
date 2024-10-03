@@ -23,4 +23,4 @@ A delta window can then be created, and, if needed, an OpenGL context can be add
 - Support for different graphics API's (Vulkan, Metal, Direct12, etc...)
 
 ## License
-This software is distributed under the MIT License, details can be found in the LICENSE.md file.
+This software is distributed under the MIT License, details can be found in LICENSE.md.
