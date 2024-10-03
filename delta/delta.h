@@ -22,23 +22,23 @@ no warranty implied; use at your own risk
 
 #define nullptr (void*)0
 // unsigned long long int
-#define size_d   size_t
+typedef size_t      size;
 // unsigned char
-#define uint8_d  uint8_t
+typedef uint8_t     uint8;
 // unsigned short
-#define uint16_d uint16_t
+typedef uint16_t    uint16;
 // unsigned int
-#define uint32_d uint32_t
+typedef uint32_t    uint32;
 // unsigned long long int
-#define uint64_d uint64_t
+typedef uint64_t    uint64;
 // signed char
-#define int8_d   int8_t
+typedef int8_t      int8;
 // signed short
-#define int16_d  int16_t
+typedef int16_t     int16;
 // signed int
-#define int32_d  int32_t
+typedef int32_t     int32;
 // signed long long int
-#define int64_d  int64_t
+typedef int64_t     int64;
 
 typedef void* (*deltaProcAddress)(const char*); 
 
@@ -53,8 +53,8 @@ typedef void* (*deltaProcAddress)(const char*);
 #define DELTA_VERSION_MINOR 1
 
 typedef struct DELTA_WINDOW {
-    uint32_d created;
-    uint32_d destroyed;
+    uint32 created;
+    uint32 destroyed;
     HWND hwnd;
 } deltaWindow;
 
@@ -65,13 +65,17 @@ typedef struct DELTA_DATA {
 
 extern DeltaData deltaData;
 
+
+// overrides
+
+
 /* 
 delta's malloc,
 allocates a size of heap memory
 returns a pointer to the newly allocated
 memory, or nullptr if size is 0 
 */
-void* override malloc_d(size_d size);
+void* override malloc_d(size size);
 /*
 delta's realloc
 reallocates the given block of memory
@@ -79,7 +83,7 @@ returns a pointer to the new block,
 returns the old block if newSize is 0, or,
 returns nullptr if block is nullptr
 */
-void* override realloc_d(void* block, size_d newSize);
+void* override realloc_d(void* block, size newSize);
 /*
 delta's free
 frees the given block of memory
@@ -94,17 +98,23 @@ to the given value
 returns the new block, or
 nullptr if block is a nullptr
 */
-void* override memset_d(void* block, int value, size_d num);
+void* override memset_d(void* block, int value, size num);
 
 
-DELAPI uint32_d deltaSetOpenGLContext(uint32_d versionMajor, uint32_d versionMinor);
+// delta declarations
 
+
+/*
+creates and sets the OpenGL's context
+to the give major and minor versions.
+*/
+DELAPI uint32 deltaSetOpenGLContext(uint32 versionMajor, uint32 versionMinor);
 /*
 creates a delta window
 returns a pointer to the newly created window, or,
 nullptr on failure
 */
-DELAPI deltaWindow* deltaCreateWindow(const char* title, uint32_d w, uint32_d h, uint32_d flags);
+DELAPI deltaWindow* deltaCreateWindow(const char* title, uint32 w, uint32 h, uint32 flags);
 /*
 updates the delta window,
 retrieves any updates sent to delta
@@ -117,7 +127,7 @@ retrieves the close flag from
 the delta window given
 returns the close flag
 */
-DELAPI uint32_d deltaWindowShouldClose(deltaWindow* window);
+DELAPI uint32 deltaWindowShouldClose(deltaWindow* window);
 /*
 free the given delta window,
 releasing the memory used
@@ -128,7 +138,9 @@ returns the address to the current openGL context
 */
 DELAPI deltaProcAddress deltaGetProcAddress(const char* name);
 
-// win32 api
+
+// win32 declarations
+
 
 // Define necessary WGL_ARB constants manually
 #define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
@@ -143,9 +155,15 @@ typedef HGLRC(WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC hDC, HGLRC hShareCo
 
 DELAPI_WIN32 LRESULT CALLBACK GetWindowProcWin32(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
-DELAPI_WIN32 HWND CreateWindowWin32(const char* title, uint32_d width, uint16_d height);
+DELAPI_WIN32 HWND CreateWindowWin32(const char* title, uint32 width, uint16 height);
 
 #endif
+
+/*
+------------------------------
+    IMPLEMENTATIONS FOLLOW     
+------------------------------
+*/
 
 #ifdef DELTA_IMPLEMENTATION
 
@@ -153,13 +171,13 @@ DeltaData deltaData;
 
 // overrides
 
-void* override malloc_d(size_d size) {
+void* override malloc_d(size size) {
     if (size <= 0)
         return nullptr;
     return malloc(size);
 }
 
-void* override realloc_d(void* block, size_d newSize) {
+void* override realloc_d(void* block, size newSize) {
     if (newSize <= 0) 
         return block;
     if (block == nullptr)
@@ -173,14 +191,16 @@ void override free_d(void* block) {
     free(block);
 }
 // dont fucking use this
-void* override memset_d(void* block, int value, size_d num) {
+void* override memset_d(void* block, int value, size num) {
     memset(block, value, num);
     return block;
 }
 
+
 // delta implementations
 
-DELAPI uint32_d deltaSetOpenGLContext(uint32_d versionMajor, uint32_d versionMinor) {
+
+DELAPI uint32 deltaSetOpenGLContext(uint32 versionMajor, uint32 versionMinor) {
     PIXELFORMATDESCRIPTOR pfd = { 0 };
     pfd.nSize = sizeof(pfd);
     pfd.nVersion = 1;
@@ -196,7 +216,7 @@ DELAPI uint32_d deltaSetOpenGLContext(uint32_d versionMajor, uint32_d versionMin
         printf("Failed to retrieve HDC\n");
     }
 
-    uint32_d pixelFormatNumber = ChoosePixelFormat(hdc, &pfd);
+    uint32 pixelFormatNumber = ChoosePixelFormat(hdc, &pfd);
     SetPixelFormat(hdc, pixelFormatNumber, &pfd);
 
     HGLRC temp = wglCreateContext(hdc);
@@ -209,7 +229,7 @@ DELAPI uint32_d deltaSetOpenGLContext(uint32_d versionMajor, uint32_d versionMin
         printf("Failed to create context attribs arb\n");
     }
 
-    uint32_d attribs[] = {
+    uint32 attribs[] = {
         WGL_CONTEXT_MAJOR_VERSION_ARB, versionMajor,
         WGL_CONTEXT_MINOR_VERSION_ARB, versionMinor,
         WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB, 
@@ -223,7 +243,7 @@ DELAPI uint32_d deltaSetOpenGLContext(uint32_d versionMajor, uint32_d versionMin
     deltaData.context = hrc;
 }
 
-DELAPI deltaWindow* deltaCreateWindow(const char* title, uint32_d w, uint32_d h, uint32_d flags) {
+DELAPI deltaWindow* deltaCreateWindow(const char* title, uint32 w, uint32 h, uint32 flags) {
     deltaWindow* window = (deltaWindow*)malloc_d(sizeof(deltaWindow));
     memset(window, 0, sizeof(deltaWindow));
 
@@ -232,7 +252,7 @@ DELAPI deltaWindow* deltaCreateWindow(const char* title, uint32_d w, uint32_d h,
 
     window->hwnd = CreateWindowWin32(title, w, h);
 
-    uint8_d shown = flags & DELTA_WINDOW_SHOWN;
+    uint8 shown = flags & DELTA_WINDOW_SHOWN;
     if (shown)
         ShowWindow(window->hwnd, 1);
     else 
@@ -262,7 +282,7 @@ DELAPI void deltaUpdateWindow(deltaWindow* window) {
     return;
 }
 
-DELAPI uint32_d deltaWindowShouldClose(deltaWindow* window) {
+DELAPI uint32 deltaWindowShouldClose(deltaWindow* window) {
     return window->destroyed;
 }
 
@@ -280,7 +300,9 @@ DELAPI deltaProcAddress deltaGetProcAddress(const char* name) {
     }
 }
 
+
 // win32 implementations
+
 
 DELAPI_WIN32 LRESULT CALLBACK GetWindowProcWin32(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     switch (msg) {
@@ -301,7 +323,7 @@ DELAPI_WIN32 LRESULT CALLBACK GetWindowProcWin32(HWND hwnd, UINT msg, WPARAM wpa
     return DefWindowProc(hwnd, msg, wparam, lparam);
 }
 
-DELAPI_WIN32 HWND CreateWindowWin32(const char* title, uint32_d width, uint16_d height) {
+DELAPI_WIN32 HWND CreateWindowWin32(const char* title, uint32 width, uint16 height) {
 
     HINSTANCE instance = GetModuleHandle(0);
     if (instance == NULL) 
