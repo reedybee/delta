@@ -138,6 +138,8 @@ returns the address to the current openGL context
 */
 DELAPI deltaProcAddress deltaGetProcAddress(const char* name);
 
+DELAPI void deltaGetWindowSize(deltaWindow* window, int* w, int* h);
+
 
 // win32 declarations
 
@@ -214,6 +216,7 @@ DELAPI uint32 deltaSetOpenGLContext(uint32 versionMajor, uint32 versionMinor) {
     HDC hdc = GetDC(deltaData.deltaWindow->hwnd);
     if (hdc == NULL) {
         printf("Failed to retrieve HDC\n");
+        return 0;
     }
 
     uint32 pixelFormatNumber = ChoosePixelFormat(hdc, &pfd);
@@ -227,6 +230,7 @@ DELAPI uint32 deltaSetOpenGLContext(uint32 versionMajor, uint32 versionMinor) {
 
     if (!wglCreateContextAttribsARB) {
         printf("Failed to create context attribs arb\n");
+        return 0;
     }
 
     uint32 attribs[] = {
@@ -241,6 +245,8 @@ DELAPI uint32 deltaSetOpenGLContext(uint32 versionMajor, uint32 versionMinor) {
     wglDeleteContext(temp);
     wglMakeCurrent(hdc, hrc);
     deltaData.context = hrc;
+
+    return 1;
 }
 
 DELAPI deltaWindow* deltaCreateWindow(const char* title, uint32 w, uint32 h, uint32 flags) {
@@ -298,8 +304,19 @@ DELAPI deltaProcAddress deltaGetProcAddress(const char* name) {
         HMODULE module = GetModuleHandleA("opengl32.dll");
         addr = (deltaProcAddress)GetProcAddress(module, name);
     }
+    return addr;
 }
 
+DELAPI void deltaGetWindowSize(deltaWindow* window, int* w, int* h) {
+    RECT rect;
+
+    GetWindowRect(window->hwnd, &rect);
+
+    *w = rect.right  - rect.left;
+    *h = rect.bottom - rect.top;
+
+    return;
+}
 
 // win32 implementations
 
@@ -313,7 +330,7 @@ DELAPI_WIN32 LRESULT CALLBACK GetWindowProcWin32(HWND hwnd, UINT msg, WPARAM wpa
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
 
-            FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW+1));
+            FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW));
 
             EndPaint(hwnd, &ps);
         }
@@ -335,6 +352,7 @@ DELAPI_WIN32 HWND CreateWindowWin32(const char* title, uint32 width, uint16 heig
 
     class.lpfnWndProc = GetWindowProcWin32;
     class.hInstance = instance;
+    class.hCursor = LoadCursor(NULL, IDC_ARROW);
     class.lpszClassName = classname;
 
     if (!RegisterClass(&class))
