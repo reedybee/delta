@@ -11,6 +11,7 @@ no warranty implied; use at your own risk
 #include <stdio.h>
 #include <string.h>
 #include <windows.h>
+#include <dwmapi.h>
 #include <glad/glad.h>
 
 // used to distinquish what is apart of the Delta api
@@ -51,6 +52,47 @@ typedef void* (*deltaProcAddress)(const char*);
 
 #define DELTA_VERSION_MAJOR 0
 #define DELTA_VERSION_MINOR 1
+
+#define DELTA_KEY_0 0x30
+#define DELTA_KEY_1 0x31
+#define DELTA_KEY_2 0x32
+#define DELTA_KEY_3 0x33
+#define DELTA_KEY_4 0x34
+#define DELTA_KEY_5 0x35
+#define DELTA_KEY_6 0x36
+#define DELTA_KEY_7 0x37
+#define DELTA_KEY_8 0x38
+#define DELTA_KEY_9 0x39
+
+#define DELTA_KEY_A 0x41
+#define DELTA_KEY_B 0x42
+#define DELTA_KEY_C 0x43
+#define DELTA_KEY_D 0x44
+#define DELTA_KEY_E 0x45
+#define DELTA_KEY_F 0x46
+#define DELTA_KEY_G 0x47
+#define DELTA_KEY_H 0x48
+#define DELTA_KEY_I 0x49
+#define DELTA_KEY_J 0x4A
+#define DELTA_KEY_K 0x4B
+#define DELTA_KEY_L 0x4C
+#define DELTA_KEY_M 0x4D
+#define DELTA_KEY_N 0x4E
+#define DELTA_KEY_O 0x4F
+#define DELTA_KEY_P 0x50
+#define DELTA_KEY_Q 0x51
+#define DELTA_KEY_R 0x52
+#define DELTA_KEY_S 0x53
+#define DELTA_KEY_T 0x54
+#define DELTA_KEY_U 0x55
+#define DELTA_KEY_V 0x56
+#define DELTA_KEY_W 0x57
+#define DELTA_KEY_X 0x58
+#define DELTA_KEY_Y 0x59
+#define DELTA_KEY_Z 0x5A
+
+#define DELTA_STATE_KEY_RELEASE 0
+#define DELTA_STATE_KEY_PRESS   1
 
 typedef struct DELTA_WINDOW {
     uint32 created;
@@ -138,7 +180,11 @@ returns the address to the current openGL context
 */
 DELAPI deltaProcAddress deltaGetProcAddress(const char* name);
 
-DELAPI void deltaGetWindowSize(deltaWindow* window, int* w, int* h);
+DELAPI void deltaGetWindowSize(deltaWindow* window, uint32* w, uint32* h);
+
+DELAPI void deltaGetMousePosition(deltaWindow* window, uint32* x, uint32* y); 
+
+DELAPI uint32 deltaGetKey(uint32 key);
 
 
 // win32 declarations
@@ -307,16 +353,59 @@ DELAPI deltaProcAddress deltaGetProcAddress(const char* name) {
     return addr;
 }
 
-DELAPI void deltaGetWindowSize(deltaWindow* window, int* w, int* h) {
-    RECT rect;
+DELAPI void deltaGetWindowSize(deltaWindow* window, uint32* w, uint32* h) {
+    RECT rect = { 0 };
 
-    GetWindowRect(window->hwnd, &rect);
+    GetClientRect(window->hwnd, &rect);
 
     *w = rect.right  - rect.left;
     *h = rect.bottom - rect.top;
 
     return;
+}   
+
+DELAPI void deltaGetMousePosition(deltaWindow* window, uint32* x, uint32* y) {
+    POINT pos = { 0 };
+
+    GetCursorPos(&pos);
+
+    MapWindowPoints(NULL, window->hwnd, &pos, 1);
+
+    int32 xPos = pos.x, yPos = pos.y;
+
+    uint32 w = 0, h = 0;
+
+    deltaGetWindowSize(window, &w, &h);
+
+    if (xPos < 0) {
+        xPos = 0;
+        return;
+    }
+        
+    if (xPos > w) {
+        xPos = w;
+        return;
+    }
+
+    if (yPos < 0) {
+        yPos = 0;
+        return;
+    }
+    if (yPos > h) {
+        yPos = h;
+        return;
+    }
+
+    *x = (uint32)xPos;
+    *y = (uint32)yPos;
+
+    return;
 }
+
+DELAPI uint32 deltaGetKey(uint32 key) {
+    return GetKeyState(key) & 0x8000;
+}
+
 
 // win32 implementations
 
@@ -358,12 +447,23 @@ DELAPI_WIN32 HWND CreateWindowWin32(const char* title, uint32 width, uint16 heig
     if (!RegisterClass(&class))
         printf("Failed to register class\n");
 
+    RECT windowSize = { 0 };
+    windowSize.left = 0;
+    windowSize.top  = 0;
+    windowSize.right = width;
+    windowSize.bottom  = height;
+
+    AdjustWindowRect(&windowSize, WS_OVERLAPPEDWINDOW, 0);
+
+    uint32 newWidth  = windowSize.right  - windowSize.left;
+    uint32 newHeight = windowSize.bottom - windowSize.top;
+
     HWND hwnd = CreateWindowEx(
         0,
         classname,
         title,
         WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, width, height,
+        CW_USEDEFAULT, CW_USEDEFAULT, newWidth, newHeight,
         NULL,
         NULL,
         instance,

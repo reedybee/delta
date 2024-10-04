@@ -12,7 +12,7 @@ GLADINCLUDE := $(GLADPATH)/include
 GLADSOURCE := $(GLADPATH)/src/glad.c
 
 INCLUDE := -I$(DELTA) -I$(GLADINCLUDE)
-LINK := -lopengl32 -lgdi32
+LINK := -lopengl32 -lgdi32 -ldwmapi
 
 test: 
 	$(CC) $(CFLAGS) $(INCLUDE) $(GLADSOURCE) $(TESTFILE) -o $(OUTPUTFILE) $(LINK)
