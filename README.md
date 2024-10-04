@@ -3,8 +3,9 @@ Delta (**D**ynamic **E**ngine for **L**ow-Level **T**asks and **A**PI's) is a si
 operating systems and hardware using a single API.
 
 ## Features:
-- Create and manage windows using the `Win32 API`,
-- Interface with OpenGL directly to handle graphics,
+- Create and manage windows using the `Win32 API`
+- Interface with OpenGL directly to handle graphics
+- Get user input (needs more work)
 
 ## Usage:
 Delta's header file can be found at `delta/delta.h`.
@@ -18,7 +19,6 @@ A delta window can then be created, and, if needed, an OpenGL context can be add
 
 ## Planned Features:
  Planned features may change, these are just features I would like to implement in the future.
-- Input Support
 - Linux and MacOS Support (Creating/Managing windows)
 - Support for different graphics API's (Vulkan, Metal, Direct12, etc...)
 
