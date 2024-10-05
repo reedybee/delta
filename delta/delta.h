@@ -10,14 +10,74 @@ no warranty implied; use at your own risk
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <glad/glad.h>
+
+const uint32 operatingSystem; 
+
+#define WINDOWS 0x00
+#define UNIX 0x01
+
+#if defined(_WIN32) || defined(WIN32)
+
 #include <windows.h>
 #include <dwmapi.h>
-#include <glad/glad.h>
+
+// Define necessary WGL_ARB constants manually
+#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
+#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
+#define WGL_CONTEXT_PROFILE_MASK_ARB  0x9126
+
+// Profile bits
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB  0x00000001
+#define WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB 0x00000002
+
+typedef HGLRC(WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC hDC, HGLRC hShareContext, const int* attribList);
+
+DELAPI_WIN32 LRESULT CALLBACK GetWindowProcWin32(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
+
+DELAPI_WIN32 HWND CreateWindowWin32(const char* title, uint32 width, uint16 height);
+
+
+typedef struct DELTA_WINDOW {
+    uint32 created;
+    uint32 destroyed;
+    HWND hwnd;
+} deltaWindow;
+
+typedef struct DELTA_DATA {
+    deltaWindow* deltaWindow;
+    HGLRC context;
+} deltaData;
+
+operatingSystem = WINDOWS;
+
+#define DELTA_WIN32
+
+#endif
+
+#ifdef __unix__
+
+
+typedef struct DELTA_WINDOW {
+
+} deltaWindow;
+
+typedef struct DELTA_DATA {
+
+} deltaData;
+
+operatingSystem = UNIX;
+
+#define DELTA_UNIX
+
+#endif
 
 // used to distinquish what is apart of the Delta api
 #define DELAPI 
 // used to distinquish what is win32 based
 #define DELAPI_WIN32
+// used to distinquish what is win32 based
+#define DELAPI_UNIX
 
 #define nullptr (void*)0
 // unsigned long long int
@@ -92,18 +152,7 @@ typedef void* (*deltaProcAddress)(const char*);
 #define DELTA_STATE_KEY_RELEASE 0
 #define DELTA_STATE_KEY_PRESS   1
 
-typedef struct DELTA_WINDOW {
-    uint32 created;
-    uint32 destroyed;
-    HWND hwnd;
-} deltaWindow;
-
-typedef struct DELTA_DATA {
-    deltaWindow* deltaWindow;
-    HGLRC context;
-} DeltaData;
-
-extern DeltaData deltaData;
+extern deltaData deltaData;
 
 
 // delta declarations
@@ -149,25 +198,6 @@ DELAPI void deltaGetMousePosition(deltaWindow* window, uint32* x, uint32* y);
 
 DELAPI uint32 deltaGetKey(uint32 key);
 
-
-// win32 declarations
-
-
-// Define necessary WGL_ARB constants manually
-#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
-#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
-#define WGL_CONTEXT_PROFILE_MASK_ARB  0x9126
-
-// Profile bits
-#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB  0x00000001
-#define WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB 0x00000002
-
-typedef HGLRC(WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC hDC, HGLRC hShareContext, const int* attribList);
-
-DELAPI_WIN32 LRESULT CALLBACK GetWindowProcWin32(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
-
-DELAPI_WIN32 HWND CreateWindowWin32(const char* title, uint32 width, uint16 height);
-
 #endif
 
 /*
@@ -178,7 +208,7 @@ DELAPI_WIN32 HWND CreateWindowWin32(const char* title, uint32 width, uint16 heig
 
 #ifdef DELTA_IMPLEMENTATION
 
-DeltaData deltaData;
+deltaData deltaData;
 
 
 // delta implementations
