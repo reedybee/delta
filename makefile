@@ -4,7 +4,7 @@ DELTA := delta/
 
 CC := gcc
 DEBUG := gdb
-CFLAGS := -g -v -Wall -std=c99
+CFLAGS := -g -v -Wall -std=c99 -no-pie
 CWD := $(shell pwd) 
 
 GLADPATH := test/glad

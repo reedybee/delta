@@ -17,9 +17,6 @@ int main(void) {
         printf("Failed to initialize glad\n");
     }
 
-    uint32 x = 0;
-    uint32 y = 0;
-
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     while (!deltaWindowShouldClose(window)) {
         if (deltaGetKey(DELTA_KEY_1))
@@ -28,17 +25,12 @@ int main(void) {
             glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
         if (deltaGetKey(DELTA_KEY_3))
             glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
-        
-        deltaGetMousePosition(window, &x, &y);
-
-        //deltaGetWindowSize(window, &x, & y);
-
-        printf("%u %u\n", x, y);
 
         glClear(GL_COLOR_BUFFER_BIT);
-            
-        deltaUpdateWindow(window);
+
+        deltaUpdateWindow(window);  
     }
     deltaDestroyWindow(window);
+    
     return 0;
 }

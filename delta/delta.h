@@ -18,8 +18,6 @@ no warranty implied; use at your own risk
 #define DELAPI 
 // used to distinquish what is win32 based
 #define DELAPI_WIN32
-// used to distinguish what standard functions are being overriden
-#define override
 
 #define nullptr (void*)0
 // unsigned long long int
@@ -108,41 +106,6 @@ typedef struct DELTA_DATA {
 extern DeltaData deltaData;
 
 
-// overrides
-
-
-/* 
-delta's malloc,
-allocates a size of heap memory
-returns a pointer to the newly allocated
-memory, or nullptr if size is 0 
-*/
-void* override malloc_d(size size);
-/*
-delta's realloc
-reallocates the given block of memory
-returns a pointer to the new block,
-returns the old block if newSize is 0, or,
-returns nullptr if block is nullptr
-*/
-void* override realloc_d(void* block, size newSize);
-/*
-delta's free
-frees the given block of memory
-returns nothing,
-if block is nullptr, this function does nothing
-*/
-void override free_d(void* block);
-/*
-delta's memset
-sets the first num bytes in the given block
-to the given value
-returns the new block, or
-nullptr if block is a nullptr
-*/
-void* override memset_d(void* block, int value, size num);
-
-
 // delta declarations
 
 
@@ -217,33 +180,6 @@ DELAPI_WIN32 HWND CreateWindowWin32(const char* title, uint32 width, uint16 heig
 
 DeltaData deltaData;
 
-// overrides
-
-void* override malloc_d(size size) {
-    if (size <= 0)
-        return nullptr;
-    return malloc(size);
-}
-
-void* override realloc_d(void* block, size newSize) {
-    if (newSize <= 0) 
-        return block;
-    if (block == nullptr)
-        return nullptr;
-    return realloc(block, newSize);
-}
-
-void override free_d(void* block) {
-    if (block == nullptr)
-        return;
-    free(block);
-}
-// dont fucking use this
-void* override memset_d(void* block, int value, size num) {
-    memset(block, value, num);
-    return block;
-}
-
 
 // delta implementations
 
@@ -315,6 +251,7 @@ DELAPI deltaWindow* deltaCreateWindow(const char* title, uint32 w, uint32 h, uin
 }
 
 DELAPI void deltaUpdateWindow(deltaWindow* window) {
+    
     if (window == nullptr) {
         printf("NO WINDOW\n");
         return;
@@ -462,7 +399,7 @@ DELAPI_WIN32 HWND CreateWindowWin32(const char* title, uint32 width, uint16 heig
         0,
         classname,
         title,
-        WS_OVERLAPPEDWINDOW,
+        WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
         CW_USEDEFAULT, CW_USEDEFAULT, newWidth, newHeight,
         NULL,
         NULL,
@@ -472,6 +409,7 @@ DELAPI_WIN32 HWND CreateWindowWin32(const char* title, uint32 width, uint16 heig
     if (hwnd == NULL) {
         printf("Failed to create win32 window\n");
     }
+
     return hwnd;
 }
 
