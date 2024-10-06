@@ -19,6 +19,7 @@ int main(void) {
 
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     while (!deltaWindowShouldClose(window)) {
+    
         if (deltaGetKey(DELTA_KEY_1))
             glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
         if (deltaGetKey(DELTA_KEY_2))
